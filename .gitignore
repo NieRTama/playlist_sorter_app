@@ -69,3 +69,6 @@ app.*.map.json
 
 # Generated files
 pubspec.lock
+
+# Claude Code local settings
+.claude/

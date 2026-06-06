@@ -1,3 +1,6 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
+// NOTE: Uses dart:html (deprecated). A migration to package:web + dart:js_interop
+// is pending; deferred until it can be verified against a real web build.
 import 'dart:async';
 import 'dart:html' as html;
 import 'dart:typed_data';

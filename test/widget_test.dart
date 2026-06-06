@@ -1,30 +1,70 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Unit tests for the Playlist Sorter app's core logic.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:playlist_sorter_app/main.dart';
+import 'package:playlist_sorter/models/song.dart';
+import 'package:playlist_sorter/models/playlist_config.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Song', () {
+    test('round-trips through JSON (excluding runtime-only fields)', () {
+      const song = Song(
+        path: '/music/track.mp3',
+        title: 'Track',
+        artist: 'Artist',
+        album: 'Album',
+        durationMs: 123000,
+      );
+      final restored = Song.fromJson(song.toJson());
+      expect(restored.path, song.path);
+      expect(restored.title, song.title);
+      expect(restored.artist, song.artist);
+      expect(restored.album, song.album);
+      expect(restored.durationMs, song.durationMs);
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('fromJson falls back to filename when title missing', () {
+      final song = Song.fromJson({'path': '/music/My Song.flac'});
+      expect(song.title, 'My Song.flac');
+      expect(song.artist, '');
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('mimeType maps known extensions', () {
+      expect(const Song(path: 'a.mp3', title: 'a').mimeType, 'audio/mpeg');
+      expect(const Song(path: 'a.flac', title: 'a').mimeType, 'audio/flac');
+      expect(const Song(path: 'a.opus', title: 'a').mimeType, 'audio/ogg');
+      expect(const Song(path: 'a.xyz', title: 'a').mimeType, 'audio/mpeg');
+    });
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  group('PlaylistConfig', () {
+    test('equality ignores createdAt', () {
+      final a = PlaylistConfig(up: '春', down: '秋', left: '冬', right: '夏');
+      final b = PlaylistConfig(
+        up: '春',
+        down: '秋',
+        left: '冬',
+        right: '夏',
+        createdAt: DateTime(2000),
+      );
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('copyWith overrides only given fields', () {
+      final base = PlaylistConfig.defaultConfig;
+      final updated = base.copyWith(up: 'Morning');
+      expect(updated.up, 'Morning');
+      expect(updated.down, base.down);
+      expect(updated.left, base.left);
+      expect(updated.right, base.right);
+    });
+
+    test('fromJson supplies defaults for missing keys', () {
+      final config = PlaylistConfig.fromJson({'up': 'A'});
+      expect(config.up, 'A');
+      expect(config.down, '↓');
+      expect(config.left, '←');
+      expect(config.right, '→');
+    });
   });
 }

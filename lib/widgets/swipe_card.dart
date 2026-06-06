@@ -50,8 +50,13 @@ class _SwipeCardState extends State<SwipeCard>
     super.dispose();
   }
 
+  // Thresholds compared as squared magnitudes to avoid sqrt on every drag frame.
+  static const double _hintThresholdSq = 40 * 40;
+  static const double _commitThresholdSq = 100 * 100;
+  static const double _flingVelocitySq = 600 * 600;
+
   SwipeDirection? _directionOf(Offset offset) {
-    if (offset.distance < 40) return null;
+    if (offset.distanceSquared < _hintThresholdSq) return null;
     if (offset.dy.abs() > offset.dx.abs()) {
       return offset.dy < 0 ? SwipeDirection.up : SwipeDirection.down;
     } else {
@@ -75,11 +80,11 @@ class _SwipeCardState extends State<SwipeCard>
     final vel = d.velocity.pixelsPerSecond;
     SwipeDirection? dir;
 
-    if (vel.distance > 600) {
+    if (vel.distanceSquared > _flingVelocitySq) {
       dir = vel.dy.abs() > vel.dx.abs()
           ? (vel.dy < 0 ? SwipeDirection.up : SwipeDirection.down)
           : (vel.dx < 0 ? SwipeDirection.left : SwipeDirection.right);
-    } else if (_offset.distance > 100) {
+    } else if (_offset.distanceSquared > _commitThresholdSq) {
       dir = _directionOf(_offset);
     }
 
@@ -159,13 +164,13 @@ class _SwipeCardState extends State<SwipeCard>
       onPanCancel: _onPanCancel,
       child: Transform(
         transform: Matrix4.identity()
-          ..translate(_offset.dx, _offset.dy)
+          ..translateByDouble(_offset.dx, _offset.dy, 0, 1)
           ..rotateZ(rotation),
         alignment: Alignment.center,
         child: SizedBox(
           width: MediaQuery.of(context).size.width * 0.78,
           child: Card(
-            elevation: _offset.distance > 10 ? 14 : 5,
+            elevation: _offset.distanceSquared > 100 ? 14 : 5,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
               side: _hintDir != null

@@ -98,7 +98,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           child: FilledButton.icon(
                             icon: const Icon(Icons.play_arrow_rounded),
                             label: const Text('続きから再開'),
-                            onPressed: () => _resumeSession(context),
+                            onPressed: _resumeSession,
                           ),
                         ),
                       ],
@@ -160,7 +160,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           : defaultTargetPlatform == TargetPlatform.iOS
                               ? 'ミュージックライブラリから読み込む'
                               : 'フォルダを選択して開始'),
-                  onPressed: _loading ? null : () => _startNew(context),
+                  onPressed: _loading ? null : _startNew,
                 ),
               ),
               const SizedBox(height: 12),
@@ -169,7 +169,7 @@ class _SetupScreenState extends State<SetupScreen> {
               TextButton.icon(
                 icon: const Icon(Icons.tune_rounded),
                 label: const Text('プレイリスト設定'),
-                onPressed: () => _showSettings(context),
+                onPressed: _showSettings,
               ),
             ],
           ),
@@ -178,7 +178,7 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  Future<void> _startNew(BuildContext context) async {
+  Future<void> _startNew() async {
     final appState = context.read<AppState>();
 
     if (appState.hasSession) {
@@ -209,6 +209,7 @@ class _SetupScreenState extends State<SetupScreen> {
 
       final iterator = StreamIterator<List<Song>>(batchStream);
       if (!await iterator.moveNext()) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(kIsWeb
@@ -222,6 +223,7 @@ class _SetupScreenState extends State<SetupScreen> {
       }
 
       appState.startSession(iterator.current);
+      final activeSessionId = appState.sessionId;
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -232,9 +234,9 @@ class _SetupScreenState extends State<SetupScreen> {
 
       if (await iterator.moveNext()) {
         appState.setLoadingMoreSongs(true);
-        appState.appendSongs(iterator.current);
+        appState.appendSongs(iterator.current, sessionId: activeSessionId);
         while (await iterator.moveNext()) {
-          appState.appendSongs(iterator.current);
+          appState.appendSongs(iterator.current, sessionId: activeSessionId);
         }
         appState.setLoadingMoreSongs(false);
       }
@@ -243,7 +245,7 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
-  void _resumeSession(BuildContext context) {
+  void _resumeSession() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -251,7 +253,7 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  void _showSettings(BuildContext context) {
+  void _showSettings() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

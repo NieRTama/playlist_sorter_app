@@ -9,6 +9,7 @@ enum SwipeDirection { up, down, left, right }
 class AppState extends ChangeNotifier {
   List<Song> _songs = [];
   int _currentIndex = 0;
+  int _sessionId = 0;
   final Map<SwipeDirection, List<Song>> _playlists = {
     SwipeDirection.up: [],
     SwipeDirection.down: [],
@@ -36,6 +37,7 @@ class AppState extends ChangeNotifier {
   int get totalCount => _songs.length;
   double get progress => _songs.isEmpty ? 0.0 : _currentIndex / _songs.length;
   bool get isLoadingMoreSongs => _isLoadingMoreSongs;
+  int get sessionId => _sessionId;
 
   String playlistName(SwipeDirection dir) {
     switch (dir) {
@@ -62,14 +64,17 @@ class AppState extends ChangeNotifier {
       try {
         _config = PlaylistConfig.fromJson(
             jsonDecode(configJson) as Map<String, dynamic>);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('AppState: failed to parse config: $e');
+      }
     }
 
     final historyJson = prefs.getStringList('configHistory') ?? [];
     _configHistory = historyJson.map((h) {
       try {
         return PlaylistConfig.fromJson(jsonDecode(h) as Map<String, dynamic>);
-      } catch (_) {
+      } catch (e) {
+        debugPrint('AppState: failed to parse config history entry: $e');
         return null;
       }
     }).whereType<PlaylistConfig>().toList();
@@ -78,7 +83,8 @@ class AppState extends ChangeNotifier {
     _songs = songsJson.map((s) {
       try {
         return Song.fromJson(jsonDecode(s) as Map<String, dynamic>);
-      } catch (_) {
+      } catch (e) {
+        debugPrint('AppState: failed to parse song: $e');
         return null;
       }
     }).whereType<Song>().toList();
@@ -92,7 +98,8 @@ class AppState extends ChangeNotifier {
       _playlists[dir] = playlistJson.map((s) {
         try {
           return Song.fromJson(jsonDecode(s) as Map<String, dynamic>);
-        } catch (_) {
+        } catch (e) {
+          debugPrint('AppState: failed to parse playlist song: $e');
           return null;
         }
       }).whereType<Song>().toList();
@@ -123,6 +130,7 @@ class AppState extends ChangeNotifier {
   }
 
   void startSession(List<Song> songs) {
+    _sessionId++;
     _songs = songs;
     _currentIndex = 0;
     for (final dir in SwipeDirection.values) {
@@ -138,17 +146,15 @@ class AppState extends ChangeNotifier {
     _playlists[direction]!.add(currentSong!);
     _currentIndex++;
 
-    // Checkpoint every 50 songs (but not at completion)
-    _needsCheckpoint = _currentIndex % 50 == 0 && _currentIndex < _songs.length;
-    if (_currentIndex % 50 == 0) {
-      saveState();
-    }
+    final isCheckpoint = _currentIndex % 50 == 0;
+    _needsCheckpoint = isCheckpoint && _currentIndex < _songs.length;
+    if (isCheckpoint) saveState();
 
     notifyListeners();
   }
 
-  void appendSongs(List<Song> songs) {
-    if (songs.isEmpty) return;
+  void appendSongs(List<Song> songs, {required int sessionId}) {
+    if (songs.isEmpty || sessionId != _sessionId) return;
     _songs.addAll(songs);
     notifyListeners();
     saveState();
@@ -181,6 +187,8 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> clearSession() async {
+    _sessionId++;
+    _isLoadingMoreSongs = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('songs');
     await prefs.remove('currentIndex');

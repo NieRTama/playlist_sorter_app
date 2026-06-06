@@ -50,8 +50,7 @@ class _SortScreenState extends State<SortScreen> {
   }
 
   Future<void> _onSwiped(SwipeDirection direction) async {
-    final currentContext = context;
-    final appState = currentContext.read<AppState>();
+    final appState = context.read<AppState>();
     appState.swipe(direction);
     setState(() => _hintDirection = null);
 
@@ -59,10 +58,7 @@ class _SortScreenState extends State<SortScreen> {
       await widget.audioService.stop();
       await appState.saveState();
       if (!mounted) return;
-      Navigator.pushReplacement(
-        currentContext,
-        MaterialPageRoute(builder: (_) => const ExportScreen()),
-      );
+      _goToExport();
       return;
     }
 
@@ -72,15 +68,35 @@ class _SortScreenState extends State<SortScreen> {
     // Checkpoint dialog (audio plays in background)
     if (appState.needsCheckpoint && mounted) {
       appState.acknowledgeCheckpoint();
-      final cont = await _showCheckpointDialog(appState, currentContext);
+      final cont = await _showCheckpointDialog(appState, context);
       if (!cont && mounted) {
         await widget.audioService.stop();
-        Navigator.pushReplacement(
-          currentContext,
-          MaterialPageRoute(builder: (_) => const ExportScreen()),
-        );
+        if (!mounted) return;
+        _goToExport();
       }
     }
+  }
+
+  void _goToExport() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const ExportScreen()),
+    );
+  }
+
+  void _openExport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ExportScreen()),
+    );
+  }
+
+  void _goHome() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const SetupScreen()),
+      (route) => false,
+    );
   }
 
   Future<bool> _showCheckpointDialog(AppState appState, BuildContext context) async {
@@ -125,11 +141,7 @@ class _SortScreenState extends State<SortScreen> {
             await widget.audioService.stop();
             await appState.saveState();
             if (!mounted) return;
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const SetupScreen()),
-              (route) => false,
-            );
+            _goHome();
           },
         ),
         title: Column(
@@ -192,13 +204,9 @@ class _SortScreenState extends State<SortScreen> {
             icon: const Icon(Icons.download_outlined),
             tooltip: '途中でエクスポート',
             onPressed: () async {
-              final currentContext = context;
               await widget.audioService.stop();
               if (!mounted) return;
-              Navigator.push(
-                currentContext,
-                MaterialPageRoute(builder: (_) => const ExportScreen()),
-              );
+              _openExport();
             },
           ),
         ],
