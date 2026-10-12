@@ -33,6 +33,17 @@ Windows で実行する場合:
 flutter run -d windows
 ```
 
+## iOS 用 IPA のビルド（Mac 不要）
+
+GitHub Actions の macOS ランナーで署名なし IPA を作ります（`.github/workflows/ios-ipa.yml`）。
+
+1. GitHub の Actions タブ →「iOS IPA (unsigned)」→「Run workflow」で実行（main への push や PR でも自動実行）
+2. 完了した実行ページの Artifacts から `playlist_sorter-unsigned-ipa` をダウンロードして解凍
+3. Windows で Sideloadly などを使い、自分の Apple ID で署名して iPhone にインストール
+
+無料の Apple ID で署名した場合、アプリは 7 日で期限切れになるので再インストール（再署名）が必要です。
+iOS 版は端末の「ミュージック」ライブラリから曲を読み込みます（DRM 付き / ストリーミングのみの曲は再生できません）。
+
 ## 使い方
 
 1. 音楽フォルダを選択して曲を読み込み
