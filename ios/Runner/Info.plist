@@ -49,6 +49,8 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSAppleMusicUsageDescription</key>
 	<string>ミュージックライブラリの曲をスワイプで仕分けるために使用します。</string>
 </dict>

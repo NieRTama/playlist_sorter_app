@@ -33,6 +33,37 @@ Windows で実行する場合:
 flutter run -d windows
 ```
 
+## iOS 用 IPA のビルド（Mac 不要）
+
+GitHub Actions の macOS ランナーで署名なし IPA を作ります（`.github/workflows/ios-ipa.yml`）。
+
+1. GitHub の Actions タブ →「iOS IPA (unsigned)」→「Run workflow」で実行（main への push や PR でも自動実行）
+2. 完了した実行ページの Artifacts から `playlist_sorter-unsigned-ipa` をダウンロードして解凍
+3. Windows で Sideloadly などを使い、自分の Apple ID で署名して iPhone にインストール
+
+無料の Apple ID で署名した場合、アプリは 7 日で期限切れになるので再インストール（再署名）が必要です。
+iOS 版は端末の「ミュージック」ライブラリから曲を読み込みます（DRM 付き / ストリーミングのみの曲は再生できません）。
+
+## TestFlight で配信（Mac 不要、Apple Developer Program 必須）
+
+`.github/workflows/ios-testflight.yml` が署名付き IPA を作って App Store Connect にアップロードします。証明書やプロファイルは Apple のクラウド署名で自動管理されるので用意不要です。
+
+### 初回だけやること
+1. [Apple Developer Program](https://developer.apple.com/jp/programs/enroll/) に登録（2ファクタ認証が有効な Apple ID が必要）
+2. [Identifiers](https://developer.apple.com/account/resources/identifiers/list) で App ID を登録（例: `io.github.niertama.playlistsorter`）
+3. [App Store Connect](https://appstoreconnect.apple.com/) の「アプリ」→「+」→「新規アプリ」で、2 の Bundle ID を選んでアプリを作成
+4. App Store Connect の「ユーザとアクセス」→「統合」→「App Store Connect API」でチームキーを作成（アクセス権は **Admin**）。Issuer ID と キー ID を控え、`.p8` をダウンロード（再ダウンロード不可）
+5. [メンバーシップ詳細](https://developer.apple.com/account) で チーム ID を確認
+6. GitHub リポジトリの Settings → Secrets and variables → Actions で登録
+   - Secrets: `APPLE_TEAM_ID` / `APPLE_API_KEY_ID` / `APPLE_API_ISSUER_ID` / `APPLE_API_KEY_P8_BASE64`（`.p8` を Base64 化した文字列。PowerShell なら `[Convert]::ToBase64String([IO.File]::ReadAllBytes("AuthKey_XXXX.p8"))`）
+   - Variables: `IOS_BUNDLE_ID`（2 の Bundle ID）
+7. App Store Connect の TestFlight タブで「内部テスト」グループを作り、自分を追加
+8. iPhone に App Store から TestFlight アプリを入れておく
+
+### 配信のたびにやること
+1. GitHub の Actions →「iOS TestFlight」→「Run workflow」
+2. App Store Connect でビルドの処理が終わると TestFlight アプリに届くのでインストール
+
 ## 使い方
 
 1. 音楽フォルダを選択して曲を読み込み
